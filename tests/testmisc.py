@@ -72,7 +72,7 @@ class TestMisc(unittest.TestCase):
     def test_to_boolean_true(self):
         self.assertTrue(misc.to_bool('True'))
 
-    def test_to_boolean_true(self):
+    def test_to_boolean_true_digit(self):
         self.assertTrue(misc.to_bool('1'))
 
     def test_noneify_1(self):

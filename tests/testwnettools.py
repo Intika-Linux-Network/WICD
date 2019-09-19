@@ -11,6 +11,14 @@ class TestWnettools(unittest.TestCase):
 		# wlan0 may change depending on your system
 		#self.assertTrue('wlan0' in interfaces)
 		self.assertTrue(type(interfaces) == list)
+
+	@mock.patch('wicd.misc.Run')
+	def test_parse_new_cfg80211_interface_stdout(self, mock_syscall):
+		with open('tests/crazy.wifi', 'r') as content_file:
+			iw_scan = content_file.read()
+		mock_syscall.return_value = iw_scan
+		cells = wnettools.BaseWirelessInterface('wlan0').GetNetworks()
+		self.assertGreater(len(cells), 0)
 		
 	@mock.patch('wicd.wnettools.os')
 	@mock.patch('wicd.wnettools.open')

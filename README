@@ -61,3 +61,10 @@ from the daemon, it is possible to run wicd without the GUI at all.  Also,
 the daemon is started by wicd's init script during system startup (before any
 user logs in), making it possible to use wicd with "headless" machines.
 
+DEV NOTES:
+--system-site-packages as a flag to virtualenv otherwise python3-dbus from
+ the OS won't be seen... (this is required only if you wanna hack the code)
+
+pip install --editable .
+	else it will lookup the wicd library at the OS level
+

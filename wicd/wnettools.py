@@ -39,6 +39,7 @@ import dbus
 import socket, fcntl
 import shutil
 from functools import cmp_to_key
+from shlex import quote
 
 from . import wpath
 from . import misc
@@ -46,20 +47,19 @@ from .misc import find_path
 
 # Regular expressions.
 _re_mode = (re.I | re.M | re.S)
-essid_pattern = re.compile('.*ESSID:"?(.*?)".*\n', _re_mode)
-ap_mac_pattern = re.compile('.*Address: (.*?)\n', _re_mode)
-channel_pattern = re.compile('.*Channel:?=? ?(\d+)', _re_mode)
+essid_pattern = re.compile('\tSSID: ?(.*?)\n', _re_mode)
+ap_mac_pattern = re.compile('BSS (([0-9a-f]{2}:?){6})+\(', _re_mode)
+channel_pattern = re.compile('\tDS Parameter set: channel ?(\d+)\n', _re_mode)
 strength_pattern = re.compile('.*Quality:?=? ?(\d+)\s*/?\s*(\d*)', _re_mode)
 altstrength_pattern = re.compile('.*Signal level:?=? ?(\d+)\s*/?\s*(\d*)',
     _re_mode)
-signaldbm_pattern = re.compile('.*Signal level:?=? ?(-\d\d*)', _re_mode)
-bitrates_pattern = re.compile('([\d\.]+)\s+\S+/s', _re_mode)
-mode_pattern = re.compile('.*Mode:([A-Za-z-]*?)\n', _re_mode)
+signaldbm_pattern = re.compile('\tsignal: (-[\d.]*) dBm', _re_mode)
+bitrates_pattern = re.compile('([\d\.]+)\*?\s+', _re_mode)
+mode_pattern = re.compile('\tcapability: (ESS|IBSS) ', _re_mode)
 freq_pattern = re.compile('.*Frequency:(.*?)\n', _re_mode)
-wep_pattern = re.compile('.*Encryption key:(.*?)\n', _re_mode)
-altwpa_pattern = re.compile('(wpa_ie)', _re_mode)
-wpa1_pattern = re.compile('(WPA Version 1)', _re_mode)
-wpa2_pattern = re.compile('(WPA2)', _re_mode)
+wep_pattern = re.compile('\tcapability: \w+ (Privacy) ', _re_mode)
+rsn_pattern = re.compile('RSN:\t \* (Version: 1)', _re_mode)
+wpa_pattern = re.compile('WPA:\t \* (Version: 1)', _re_mode)
 
 #iwconfig-only regular expressions.
 ip_up = re.compile(r'flags=[0.9]*<([^>]*)>', re.S)
@@ -1358,14 +1358,14 @@ class BaseWirelessInterface(BaseInterface):
 
         """
 
-        cmd = 'iwlist ' + self.iface + ' scan'
+        cmd = 'iw ' + self.iface + ' scan'
 
         # If there is a hidden essid then it was set earlier, with iwconfig wlan0 essid,
-	# but on some drivers (iwlwifi, in my case) we have to pass it to iwlist scan.
+	    # but on some drivers (iwlwifi, in my case) we have to pass it to iwlist scan.
         essid = misc.Noneify(essid)
         if essid is not None:
             print('Passing hidden essid to iwlist scan: ' + essid)
-            cmd = cmd + ' essid ' + essid
+            cmd = cmd + ' ssid ' + quote(essid)
 
         if self.verbose:
             print(cmd)
@@ -1374,7 +1374,7 @@ class BaseWirelessInterface(BaseInterface):
         # this way we can look at only one network at a time.
         # The spaces around '   Cell ' are to minimize the chance that someone
         # has an essid named Cell...
-        networks = results.split( '   Cell ' )
+        networks = results.split( '\nBSS ' )
 
         # Get available network info from iwpriv get_site_survey
         # if we're using a ralink card (needed to get encryption info)
@@ -1384,11 +1384,10 @@ class BaseWirelessInterface(BaseInterface):
             ralink_info = None
 
         # An array for the access points
-        access_points = []
         access_points = {}
         for cell in networks:
             # Only use sections where there is an ESSID.
-            if 'ESSID:' in cell:
+            if 'SSID:' in cell:
                 # Add this network to the list of networks
                 entry = self._ParseAccessPoint(cell, ralink_info)
                 if entry is not None:
@@ -1441,8 +1440,12 @@ class BaseWirelessInterface(BaseInterface):
             ap['channel'] = self._FreqToChannel(freq)
 
         # Bit Rate
-        bitrates = cell.split('Bit Rates')[-1].replace('\n', '; ')
+        bitrates = cell.split('Supported rates: ')[-1].split('\n')[0]
+        bitrates_ext = cell.split('Extended supported rates: ')[-1].split('\n')[0]
+        # *** bless O'Reilly for this publication...
+        # https://www.oreilly.com/library/view/80211-wireless-networks/0596100523/ch04.html#wireless802dot112-CHP-4-FIG-33
         m = re.findall(bitrates_pattern, bitrates)
+        m += re.findall(bitrates_pattern, bitrates_ext)
         if m:
             # numeric sort
             ap['bitrates'] = sorted(m, key=cmp_to_key(lambda x, y: int(float(x) - float(y))))
@@ -1454,6 +1457,7 @@ class BaseWirelessInterface(BaseInterface):
 
         # Mode
         ap['mode'] = misc.RunRegex(mode_pattern, cell)
+        # https://www.oreilly.com/library/view/80211-wireless-networks/0596100523/ch04.html#wireless802dot112-CHP-4-FIG-24
         if ap['mode'] is None:
             print('Invalid network mode string, ignoring!')
             return None
@@ -1461,25 +1465,36 @@ class BaseWirelessInterface(BaseInterface):
         # Break off here if we're using a ralink card
         if self.wpa_driver == RALINK_DRIVER:
             ap = self._ParseRalinkAccessPoint(ap, ralink_info, cell)
-        elif misc.RunRegex(wep_pattern, cell) == 'on':
+        elif misc.RunRegex(wep_pattern, cell) != None:
             # Encryption - Default to WEP
             ap['encryption'] = True
             ap['encryption_method'] = 'WEP'
 
-            if misc.RunRegex(wpa1_pattern, cell) == 'WPA Version 1':
+            rsn = False
+            wpa = False
+
+            if misc.RunRegex(wpa_pattern, cell) == 'Version: 1':
+                wpa = True
+
+            if misc.RunRegex(rsn_pattern, cell) == 'Version: 1':
+                rsn = True
+
+            if rsn:
+                if wpa:
+                    # we are in the WPA_IE case
+                    ap['encryption_method'] = 'WPA'
+                else:
+                    ap['encryption_method'] = 'WPA2'
+            elif wpa:
                 ap['encryption_method'] = 'WPA'
 
-            if misc.RunRegex(altwpa_pattern, cell) == 'wpa_ie':
-                ap['encryption_method'] = 'WPA'
-
-            if misc.RunRegex(wpa2_pattern, cell) == 'WPA2':
-                ap['encryption_method'] = 'WPA2'
         else:
             ap['encryption'] = False
 
         # Link Quality
         # Set strength to -1 if the quality is not found
         ap['quality'] = self._get_link_quality(cell)
+        # FIXME I got no idea what to grab on the "iw scan"
         if ap['quality'] is None:
             ap['quality'] = -1
 
@@ -1689,7 +1704,5 @@ class BaseWirelessInterface(BaseInterface):
             output = self.GetIwconfig()
         else:
             output = iwconfig
-        network = misc.to_unicode(misc.RunRegex(essid_pattern, output))
-        if network:
-            network = misc.to_unicode(network)
-        return network
+        return misc.RunRegex(essid_pattern, output)
+

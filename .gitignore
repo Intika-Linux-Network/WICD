@@ -1,9 +1,9 @@
+**/*.log
 .git
 wicd.egg-info/
 *.bak
 **/*.pyc
 .venv/
-.vscode/
 .bzr/
 experimental.wpr
 install.log
