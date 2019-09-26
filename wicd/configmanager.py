@@ -224,7 +224,7 @@ class ConfigManager(RawConfigParser):
     def write(self, fp=None):
         """ Writes the loaded config file to disk. """
         in_this_file = []
-        sec_r = [str(s) for s in self.sections()]
+        sec_r = [to_unicode(s) for s in self.sections()]
         for sname in sorted(sec_r):
             fname = self.get_option(sname, '_filename_')
             if fname and fname != self.config_file:
