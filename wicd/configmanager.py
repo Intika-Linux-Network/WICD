@@ -233,7 +233,7 @@ class ConfigManager(RawConfigParser):
                 section._write_one()
             else:
                 # Save names of local sections
-                in_this_file.append(sname)
+                in_this_file.append(sname.decode('utf-8'))
 
         # Make an instance with only these sections
         p = ConfigManager("", self.debug, self.mrk_ws)

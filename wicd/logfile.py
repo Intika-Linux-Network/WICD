@@ -24,7 +24,7 @@ rotates itself when a maximum size is reached.
 import sys
 import os
 import time
-import io
+from .misc import to_unicode
 
 class SizeError(IOError):
     """ Custom error class. """
@@ -49,7 +49,7 @@ class LogFile(io.FileIO):
     def write(self, data):
         self.written += len(data)
         
-        data = data.encode('utf-8')
+        data = to_unicode(data)
         if len(data) <= 0:
             return
         if self.eol:
