@@ -49,7 +49,6 @@ class LogFile(io.FileIO):
     def write(self, data):
         self.written += len(data)
         
-        data = to_unicode(data)
         if len(data) <= 0:
             return
         if self.eol:
