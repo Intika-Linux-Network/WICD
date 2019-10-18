@@ -161,8 +161,8 @@ class ConfigManager(RawConfigParser):
         """ Writes the loaded config file to disk. """
         for section in self.sections():
             print("_write_one", to_unicode(section))
-            if not section:
-                self.remove_section(section)
+            if not to_unicode(section):
+                self.remove_section(to_unicode(section))
         configfile = open(self.config_file, 'w')
         RawConfigParser.write(self, configfile)
         configfile.close()
@@ -234,7 +234,7 @@ class ConfigManager(RawConfigParser):
                 section._write_one()
             else:
                 # Save names of local sections
-                in_this_file.append(sname)
+                in_this_file.append(sname.decode('utf-8'))
         print("in_this_file", in_this_file)
 
         # Make an instance with only these sections
