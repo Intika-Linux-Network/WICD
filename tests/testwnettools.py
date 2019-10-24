@@ -19,6 +19,14 @@ class TestWnettools(unittest.TestCase):
 		mock_syscall.return_value = iw_scan
 		cells = wnettools.BaseWirelessInterface('wlan0').GetNetworks()
 		self.assertGreater(len(cells), 0)
+	
+	@mock.patch('wicd.misc.Run')
+	def test_parse_frequencies(self, mock_syscall):
+		with open('tests/freq.wifi', 'r') as content_file:
+			iw_scan = content_file.read()
+		mock_syscall.return_value = iw_scan
+		cells = wnettools.BaseWirelessInterface('wlan0').GetNetworks()
+		self.assertGreater(len(cells), 0)
 		
 	@mock.patch('wicd.wnettools.os')
 	@mock.patch('wicd.wnettools.open')
@@ -53,12 +61,12 @@ class TestWnettools(unittest.TestCase):
 		self.assertEqual(interface.iface, 'blahblahuptimetmpblahcat')
 		
 	def test_freq_translation_low(self):
-		freq = '2.412 GHz'
+		freq = '2412'
 		interface = wnettools.BaseWirelessInterface('wlan0')
 		self.assertEqual(interface._FreqToChannel(freq), 1)
 		
 	def test_freq_translation_high(self):
-		freq = '2.484 GHz'
+		freq = '2484'
 		interface = wnettools.BaseWirelessInterface('wlan0')
 		self.assertEqual(interface._FreqToChannel(freq), 14)
 		

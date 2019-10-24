@@ -1026,7 +1026,7 @@ class WirelessDaemon(dbus.service.Object, object):
         self.LastScan = scan
         if self.debug_mode:
             print('scanning done')
-            print('found ' + str(len(scan)) + ' networks:')
+            print('found ' + str(len(scan)) + ' networks')
         for i, network in enumerate(scan):
             self.ReadWirelessNetworkProfile(i)
         self.SendEndScanSignal()

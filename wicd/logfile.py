@@ -22,7 +22,7 @@ rotates itself when a maximum size is reached.
 """
 
 import sys
-import os
+import os, io
 import time
 from .misc import to_unicode
 

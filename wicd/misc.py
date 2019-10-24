@@ -31,7 +31,7 @@ from gi.repository import GLib as gobject
 from threading import Thread
 from subprocess import Popen, STDOUT, PIPE, call
 from subprocess import getoutput
-from itertools import repeat, chain
+from itertools import repeat, chain, zip_longest
 from pipes import quote
 import socket
 
@@ -72,12 +72,12 @@ IP = 1
 ROUTE = 2
 
 # Graphical sudo apps
-GKSUDO = 1
+PKEXEC = 1
 KDESU = 2
 KTSUSS = 3
 _sudo_dict = { 
     AUTO : "",
-    GKSUDO : "gksudo",
+    PKEXEC : "pkexec",
     KDESU : "kdesu",
     KTSUSS: "ktsuss",
 }
@@ -211,7 +211,7 @@ def PromptToStartDaemon():
     sudo_prog = choose_sudo_prog()
     if not sudo_prog:
         return False
-    if "gksu" in sudo_prog or "ktsuss" in sudo_prog:
+    if "pkexec" in sudo_prog or "ktsuss" in sudo_prog:
         msg = '--message'
     else:
         msg = '--caption'
@@ -454,8 +454,8 @@ def noneToString(text):
 
 def sanitize_config(s):
     """ Sanitize property names to be used in config-files. """
-    allowed = string.ascii_letters + '_' + string.digits
-    table = string.maketrans(allowed, ' ' * len(allowed))
+    allowed = str.ascii_letters + '_' + string.digits
+    table = str.maketrans(allowed, ' ' * len(allowed))
 
     # s is a dbus.String -- since we don't allow unicode property keys,
     # make it simple.
@@ -539,8 +539,8 @@ def get_sudo_cmd(msg, prog_num=0):
     sudo_prog = choose_sudo_prog(prog_num)
     if not sudo_prog:
         return None
-    if re.search("(ktsuss|gksu|gksudo)$", sudo_prog):
-        msg_flag = "-m"
+    if re.search("(pkexec|su-to-root)$", sudo_prog):
+        msg_flag = ""
     else:
         msg_flag = "--caption"
     return [sudo_prog, msg_flag, msg]
@@ -556,7 +556,7 @@ def choose_sudo_prog(prog_num=0):
     if desktop_env == "kde":
         progs = ["kdesu", "kdesudo", "ktsuss"]
     else:
-        progs = ["gksudo", "gksu", "ktsuss"]
+        progs = ["pkexec", "su-to-root"]
         
     for prog in progs:
         paths.extend([os.path.join(p, prog) for p in env_path])
