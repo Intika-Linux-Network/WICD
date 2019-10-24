@@ -1709,6 +1709,7 @@ Arguments:
 \t-e\t--no-stderr\tDon't redirect stderr.
 \t-n\t--no-poll\tDon't monitor network status.
 \t-o\t--no-stdout\tDon't redirect stdout.
+\t-k\t--kill\t\tSeek & destroy wicd processes.
 \t-h\t--help\t\tPrint this help.
 """ % (wpath.version + ' (bzr-r%s)' % wpath.revision))
 
