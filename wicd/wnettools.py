@@ -1093,6 +1093,7 @@ class BaseWirelessInterface(BaseInterface):
                          '2.457 GHz': 10, '2.462 GHz': 11, '2.467 GHz': 12,
                          '2.472 GHz': 13, '2.484 GHz': 14 }
         # TODO BUG FIXME what about the 5GHz ???
+        # https://en.wikipedia.org/wiki/List_of_WLAN_channels#5.0_GHz_(802.11j)_WLAN
         try:
             ret = freq_dict[freq]
         except KeyError:
