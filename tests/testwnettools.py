@@ -61,12 +61,12 @@ class TestWnettools(unittest.TestCase):
 		self.assertEqual(interface.iface, 'blahblahuptimetmpblahcat')
 		
 	def test_freq_translation_low(self):
-		freq = '2412'
+		freq = '2.412 GHz'
 		interface = wnettools.BaseWirelessInterface('wlan0')
 		self.assertEqual(interface._FreqToChannel(freq), 1)
 		
 	def test_freq_translation_high(self):
-		freq = '2484'
+		freq = '2.484 GHz'
 		interface = wnettools.BaseWirelessInterface('wlan0')
 		self.assertEqual(interface._FreqToChannel(freq), 14)
 		

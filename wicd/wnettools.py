@@ -1087,11 +1087,11 @@ class BaseWirelessInterface(BaseInterface):
 
         """
         ret = None
-        freq_dict ={'2412': 1,  '2417': 2,  '2422': 3,
-                    '2427': 4,  '2432': 5,  '2437': 6,
-                    '2442': 7,  '2447': 8,  '2452': 9,
-                    '2457': 10, '2462': 11, '2467': 12,
-                    '2472': 13, '2484': 14 }
+        freq_dict = {'2.412 GHz': 1, '2.417 GHz': 2, '2.422 GHz': 3,
+                         '2.427 GHz': 4, '2.432 GHz': 5, '2.437 GHz': 6,
+                         '2.442 GHz': 7, '2.447 GHz': 8, '2.452 GHz': 9,
+                         '2.457 GHz': 10, '2.462 GHz': 11, '2.467 GHz': 12,
+                         '2.472 GHz': 13, '2.484 GHz': 14 }
         # TODO BUG FIXME what about the 5GHz ???
         try:
             ret = freq_dict[freq]
